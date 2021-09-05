@@ -37,9 +37,8 @@ const mutation = gql`
 
 export default function ProductDetail() {
     const [myComment, setMyComment] = useState("");
-    const [addReview, { loading: submitting }] = useMutation<AddReviewMutation, AddReviewMutationVariables>(mutation);
     const { productId } = useParams<{ readonly productId: string}>();
-    const { data, loading } = useQuery<
+    const { data, loading, refetch } = useQuery<
         ProductDetailQuery,
         ProductDetailQueryVariables
     >(query, {
@@ -47,6 +46,16 @@ export default function ProductDetail() {
             id: productId
         }
     });
+    const [addReview, { loading: submitting }] = useMutation<AddReviewMutation, AddReviewMutationVariables
+    >(mutation, {
+        // after executing Mutation
+        update(_, { data }) {
+            if (!data?.addReview) return;
+            setMyComment("");
+            refetch();
+        }
+    });
+    
     if (loading) return <div>loading...</div>;
     if (!data?.product) return <div>not found</div>;
     const { product } = data;
