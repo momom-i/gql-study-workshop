@@ -8,18 +8,16 @@ import {
     AddReviewMutation,
     AddReviewMutationVariables
 } from "./__generated__/add-review-mutation";
-import { useState } from "react";
+import ProductReview, { productReviewFragment } from "./ProductReviewFragment";
 
 const query = gql`
+    ${productReviewFragment}
     query ProductDetailQuery($id: ID!) {
         product(id: $id) {
             id
             name
             description
-            reviews {
-                id
-                commentBody
-            }
+            ...ProductReviewFragment
         }
     }
 `;
@@ -36,7 +34,6 @@ const mutation = gql`
 `;
 
 export default function ProductDetail() {
-    const [myComment, setMyComment] = useState("");
     const { productId } = useParams<{ readonly productId: string}>();
     const { data, loading, refetch } = useQuery<
         ProductDetailQuery,
@@ -51,7 +48,6 @@ export default function ProductDetail() {
         // after executing Mutation
         update(_, { data }) {
             if (!data?.addReview) return;
-            setMyComment("");
             refetch();
         }
     });
@@ -62,45 +58,17 @@ export default function ProductDetail() {
     return (
         <>
             <h1>{product.name}</h1>
-            <p style={{ whiteSpace: "pre-wrap"}}>
-                {product.description}
-            </p>
+                <p style={{ whiteSpace: "pre-wrap" }}>{product.description}</p>
             <div>
                 <h2>レビュー</h2>
-                {product.reviews.length ? (
-                    <ul>
-                        {product.reviews.map( (r: { id: string; commentBody: string}) => (
-                            <li key={r.id}>{r.commentBody}</li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p>レビューはまだありません</p>
-                )}
+                <ProductReview
+                product={product}
+                onSubmit={comment =>
+                    addReview({ variables: { pid: productId, comment } })
+                }
+                submitting={submitting}
+                />
             </div>
-            <form
-                onSubmit={ e => {
-                    e.preventDefault();
-                    addReview({
-                        variables: {
-                            pid: productId,
-                            comment: myComment
-                        }
-                    });
-                    }
-                }>
-                    <div>
-                        <label>
-                            コメント
-                            <textarea
-                            value={myComment}
-                            onChange={e => setMyComment(e.target.value)} 
-                            />
-                        </label>
-                    </div>
-                    <button type="submit" disabled={submitting}>
-                        追加
-                    </button>
-            </form>
         </>
     );
 }
