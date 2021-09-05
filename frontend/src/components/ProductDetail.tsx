@@ -1,9 +1,14 @@
 import { useParams } from "react-router-dom";
-import { useQuery, gql } from "@apollo/client";
+import { useQuery, gql, useMutation } from "@apollo/client";
 import {
     ProductDetailQuery,
     ProductDetailQueryVariables
 } from "./__generated__/product-detail-query";
+import {
+    AddReviewMutation,
+    AddReviewMutationVariables
+} from "./__generated__/add-review-mutation";
+import { useState } from "react";
 
 const query = gql`
     query ProductDetailQuery($id: ID!) {
@@ -19,7 +24,20 @@ const query = gql`
     }
 `;
 
+const mutation = gql`
+    mutation AddReviewMutation($pid: ID!, $comment: String!) {
+        addReview(
+            productId: $pid
+            addReviewInput: { commentBody: $comment, star: 0 }
+        ) {
+            id
+        }
+    }
+`;
+
 export default function ProductDetail() {
+    const [myComment, setMyComment] = useState("");
+    const [addReview, { loading: submitting }] = useMutation<AddReviewMutation, AddReviewMutationVariables>(mutation);
     const { productId } = useParams<{ readonly productId: string}>();
     const { data, loading } = useQuery<
         ProductDetailQuery,
@@ -50,6 +68,30 @@ export default function ProductDetail() {
                     <p>レビューはまだありません</p>
                 )}
             </div>
+            <form
+                onSubmit={ e => {
+                    e.preventDefault();
+                    addReview({
+                        variables: {
+                            pid: productId,
+                            comment: myComment
+                        }
+                    });
+                    }
+                }>
+                    <div>
+                        <label>
+                            コメント
+                            <textarea
+                            value={myComment}
+                            onChange={e => setMyComment(e.target.value)} 
+                            />
+                        </label>
+                    </div>
+                    <button type="submit" disabled={submitting}>
+                        追加
+                    </button>
+            </form>
         </>
     );
 }
